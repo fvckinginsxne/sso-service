@@ -1,0 +1,10 @@
+version: "3"
+
+vars:
+  CONFIG_PATH: "../../config/local.yaml"
+
+tasks:
+  run:
+    desc: "Run the application with the local config"
+    cmds:
+      - go run main.go --config={{.CONFIG_PATH}}

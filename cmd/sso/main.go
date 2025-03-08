@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 
+	"sso/internal/app"
 	"sso/internal/config"
 	"sso/internal/lib/logger/slogpretty"
 )
@@ -20,7 +21,9 @@ func main() {
 
 	log.Info("starting sso service")
 
-	// TODO: инициализировать приложение (app)
+	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath, cfg.TokenTTL)
+
+	application.GRPCServer.MustRun()
 
 	// TODO: запустить gRPC-сервер приложения
 }

@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"time"
 
-	"sso/internal/app/grpcapp"
+	grpcapp "sso/internal/app/grpc"
 )
 
 type App struct {

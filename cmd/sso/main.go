@@ -3,6 +3,8 @@ package main
 import (
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"sso/internal/app"
 	"sso/internal/config"
@@ -19,13 +21,26 @@ func main() {
 
 	log := setupLogger(cfg.Env)
 
-	log.Info("starting sso service")
+	log.Info("starting application")
 
 	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath, cfg.TokenTTL)
 
-	application.GRPCServer.MustRun()
+	go application.GRPCServer.MustRun()
 
 	// TODO: запустить gRPC-сервер приложения
+
+	// graceful shutdown
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	sig := <-stop
+
+	log.Info("stopping application", slog.String("signal", sig.String()))
+
+	application.GRPCServer.Stop()
+
+	log.Info("application stopped")
 }
 
 func setupLogger(env string) *slog.Logger {

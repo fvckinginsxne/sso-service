@@ -8,7 +8,7 @@ import (
 )
 
 type App struct {
-	GRPCServer *grpcapp.App
+	GRPCServer *grpcapp.GRPCApp
 }
 
 func New(

@@ -10,32 +10,33 @@ import (
 	"sso/internal/grpc/authgrpc"
 )
 
-type App struct {
+type GRPCApp struct {
 	log        *slog.Logger
 	gRPCServer *grpc.Server
 	port       int
 }
 
-func New(log *slog.Logger, port int, auth authgrpc.Auth) *App {
+func New(log *slog.Logger, port int, auth authgrpc.Auth) *GRPCApp {
 	gRPCServer := grpc.NewServer()
 
 	authgrpc.Register(gRPCServer, auth)
 
-	return &App{
+	return &GRPCApp{
 		log:        log,
 		gRPCServer: gRPCServer,
 		port:       port,
 	}
 }
 
-func (a *App) MustRun() {
+// MustRun runs gRPC server and panics if any errors occurs
+func (a *GRPCApp) MustRun() {
 	if err := a.run(); err != nil {
 		panic(err)
 	}
 }
 
-func (a *App) run() error {
-	const op = "grpc.Run"
+func (a *GRPCApp) run() error {
+	const op = "grpcapp.Run"
 
 	log := a.log.With(
 		slog.String("op", op),
@@ -56,7 +57,7 @@ func (a *App) run() error {
 	return nil
 }
 
-func (a *App) Stop() {
+func (a *GRPCApp) Stop() {
 	const op = "grpc.Stop"
 
 	a.log.With(slog.String("op", op)).

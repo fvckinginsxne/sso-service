@@ -31,7 +31,7 @@ func main() {
 
 	// graceful shutdown
 
-	stop := make(chan os.Signal, 1)
+	stop := make(chan os.Signal)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 
 	sig := <-stop

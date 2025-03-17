@@ -49,7 +49,7 @@ func (s *serverAPI) Login(
 	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
 	if err != nil {
 		// TODO: error process
-		return nil, status.Error(codes.Internal, "failed to login")
+		return nil, status.Error(codes.Internal, "internal error")
 	}
 
 	return &ssov1.LoginResponse{
@@ -68,7 +68,7 @@ func (s *serverAPI) Register(
 	userID, err := s.auth.RegisterNewUser(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
 		// TODO: error process
-		return nil, status.Error(codes.Internal, "failed to register new user")
+		return nil, status.Error(codes.Internal, "internal error")
 	}
 
 	return &ssov1.RegisterResponse{
@@ -87,7 +87,7 @@ func (s *serverAPI) IsAdmin(
 	isAdmin, err := s.auth.IsAdmin(ctx, req.GetUserId())
 	if err != nil {
 		// TODO: error process
-		return nil, status.Error(codes.Internal, "failed to check user id")
+		return nil, status.Error(codes.Internal, "internal error")
 	}
 
 	return &ssov1.IsAdminResponse{

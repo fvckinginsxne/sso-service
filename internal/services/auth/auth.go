@@ -46,18 +46,17 @@ var (
 	ErrUserExists         = errors.New("user already exists")
 )
 
-func New(
-	log *slog.Logger,
-	UserSaver UserSaver,
-	UserProvider UserProvider,
-	AppProvider AppProvider,
+func New(log *slog.Logger,
+	userSaver UserSaver,
+	userProvider UserProvider,
+	appProvider AppProvider,
 	tokenTTL time.Duration,
 ) *Auth {
 	return &Auth{
 		log:          log,
-		userSaver:    UserSaver,
-		userProvider: UserProvider,
-		appProvider:  AppProvider,
+		userSaver:    userSaver,
+		userProvider: userProvider,
+		appProvider:  appProvider,
 		tokenTTL:     tokenTTL,
 	}
 }

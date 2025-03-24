@@ -1,0 +1,17 @@
+version: "3"
+
+vars:
+  CONFIG_PATH: "./config/local.yaml"
+  STORAGE_PATH: "./storage/sso.db"
+  MIGRATIONS_PATH: "./migrations"
+
+tasks:
+  run:
+    desc: "Run the application with the local config"
+    cmds:
+      - go run ./cmd/sso/main.go --config={{.CONFIG_PATH}}
+
+  migrate:
+    desc: "Apply data base migrations"
+    cmds:
+      - go run ./cmd/migrator/main.go --storage-path={{.STORAGE_PATH}} --migrations-path={{.MIGRATIONS_PATH}}

@@ -9,15 +9,15 @@ import (
 )
 
 type Config struct {
-	Env      string     `yaml:"env" env-required:"true"`
-	DB       DBConfig   `yaml:"db"`
-	TokenTTL string     `yaml:"token_ttl" env-required:"true"`
-	GRPC     GRPCConfig `yaml:"grpc"`
+	Env      string        `yaml:"env" env-required:"true"`
+	DB       DBConfig      `yaml:"db"`
+	TokenTTL time.Duration `yaml:"token_ttl" env-required:"true"`
+	GRPC     GRPCConfig    `yaml:"grpc"`
 }
 
 type DBConfig struct {
 	Host     string `yaml:"host" env-default:"localhost"`
-	Port     int    `yaml:"port" env-default:"5432"`
+	Port     string `yaml:"port" env-default:"5432"`
 	Username string `yaml:"username" env-required:"true"`
 	Password string `yaml:"password" env-required:"true"`
 	Name     string `yaml:"name" env-required:"true"`
@@ -41,7 +41,7 @@ func MustLoad() *Config {
 	var cfg Config
 
 	if err := cleanenv.ReadConfig(path, &cfg); err != nil {
-		panic("failed to read config: " +  err.Error())
+		panic("failed to read config: " + err.Error())
 	}
 
 	return &cfg

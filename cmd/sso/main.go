@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 
+	"sso/internal/app"
 	"sso/internal/config"
 	"sso/internal/lib/logger/slogpretty"
 )
@@ -23,9 +26,22 @@ func main() {
 
 	log.Info("starting servece")
 
-	// TODO: init app
+	dbURL := dbConnURL(cfg)
 
-	// TODO: run gRPC server
+	log.Debug("Database connection url", slog.String("conn", dbURL))
+
+	application := app.New(log, cfg.GRPC.Port, dbURL, cfg.TokenTTL)
+
+	go application.GRPCServer.MustRun()
+
+	stop := make(chan os.Signal, 3)
+	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	<-stop
+
+	application.GRPCServer.Stop()
+
+	log.Info("application stopped gracefully")
 }
 
 func setupLogger(env string) *slog.Logger {
@@ -53,4 +69,9 @@ func setupPrettyLogger() *slog.Logger {
 	handler := opts.NewPrettyHandler(os.Stdout)
 
 	return slog.New(handler)
+}
+
+func dbConnURL(cfg *config.Config) string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		cfg.DB.Username, cfg.DB.Password, cfg.DB.Host, cfg.DB.Port, cfg.DB.Name)
 }

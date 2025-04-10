@@ -1,0 +1,7 @@
+version: "3"
+
+tasks:
+  run:
+    desc: "Run service"
+    cmds:
+      - go run ./cmd/sso/main.go --config=./config/local.yml 

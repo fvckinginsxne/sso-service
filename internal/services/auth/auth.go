@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"sso/internal/domain/models"
 	"sso/internal/lib/jwt"
@@ -24,24 +25,25 @@ type Auth struct {
 }
 
 type UserSaver interface {
-	SaveUser(ctx context.Context, email string, passHash []byte) (int64, error)
+	SaveUser(ctx context.Context, email string, passHash []byte) error
 }
 
 type UserProvider interface {
-	User(ctx context.Context, email string) (models.User, error)
+	User(ctx context.Context, email string) (*models.User, error)
 }
 
 type AppProvider interface {
-	App(ctx context.Context, appID int) (models.App, error)
+	App(ctx context.Context, appID int) (*models.App, error)
 }
 
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrInvalidAppID       = errors.New("invalid app id")
-	ErrUserAlreadyExists  = errors.New("user already exists")
+	ErrUserExists         = errors.New("user already exists")
 )
 
-func New(log *slog.Logger,
+func New(
+	log *slog.Logger,
 	userSaver UserSaver,
 	userProvider UserProvider,
 	appProvider AppProvider,
@@ -56,7 +58,8 @@ func New(log *slog.Logger,
 	}
 }
 
-func (a *Auth) Login(ctx context.Context,
+func (a *Auth) Login(
+	ctx context.Context,
 	email string,
 	password string,
 	appID int,
@@ -111,10 +114,11 @@ func (a *Auth) Login(ctx context.Context,
 	return token, nil
 }
 
-func (a *Auth) RegisterNewUser(ctx context.Context,
+func (a *Auth) RegisterNewUser(
+	ctx context.Context,
 	email string,
 	password string,
-) (int64, error) {
+) (*emptypb.Empty, error) {
 	const op = "services.auth.RegisterNewUser"
 
 	log := a.log.With(slog.String("op", op))
@@ -125,22 +129,21 @@ func (a *Auth) RegisterNewUser(ctx context.Context,
 	if err != nil {
 		log.Error("failed to generate password hash", sl.Err(err))
 
-		return 0, fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	id, err := a.userSaver.SaveUser(ctx, email, passHash)
-	if err != nil {
-		if errors.Is(err, storage.ErrUserAlreadyExists) {
+	if err := a.userSaver.SaveUser(ctx, email, passHash); err != nil {
+		if errors.Is(err, storage.ErrUserExists) {
 			a.log.Warn("user already exists", sl.Err(err))
 
-			return 0, fmt.Errorf("%s: %w", op, ErrUserAlreadyExists)
+			return nil, fmt.Errorf("%s: %w", op, ErrUserExists)
 		}
 		log.Error("failed to save user", sl.Err(err))
 
-		return 0, fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	log.Info("user registerd")
 
-	return id, err
+	return nil, nil
 }

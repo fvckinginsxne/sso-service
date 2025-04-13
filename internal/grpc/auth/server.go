@@ -2,23 +2,28 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"sso/internal/services/auth"
 
 	ssov1 "github.com/fvckinginsxne/protos/gen/go/sso"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type Auth interface {
-	Login(ctx context.Context,
+	Login(
+		ctx context.Context,
 		email string,
 		password string,
 		appID int,
 	) (string, error)
-	RegisterNewUser(ctx context.Context,
+	RegisterNewUser(
+		ctx context.Context,
 		email string,
 		password string,
-	) (int64, error)
+	) (*emptypb.Empty, error)
 }
 
 type serverAPI struct {
@@ -34,7 +39,8 @@ const (
 	appEmptyValue = 0
 )
 
-func (s *serverAPI) Login(ctx context.Context,
+func (s *serverAPI) Login(
+	ctx context.Context,
 	req *ssov1.LoginRequest,
 ) (*ssov1.LoginResponse, error) {
 	if err := validateLogin(req); err != nil {
@@ -43,27 +49,34 @@ func (s *serverAPI) Login(ctx context.Context,
 
 	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
 	if err != nil {
-		// TODO: error process
+		if errors.Is(err, auth.ErrInvalidCredentials) {
+			return nil, status.Error(codes.InvalidArgument, "invalid email or password")
+		}
+
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
 	return &ssov1.LoginResponse{Token: token}, nil
 }
 
-func (s *serverAPI) Register(ctx context.Context,
+func (s *serverAPI) Register(
+	ctx context.Context,
 	req *ssov1.RegisterRequest,
-) (*ssov1.RegisterResponse, error) {
+) (*emptypb.Empty, error) {
 	if err := validateRegister(req); err != nil {
 		return nil, err
 	}
 
-	userID, err := s.auth.RegisterNewUser(ctx, req.GetEmail(), req.GetPassword())
+	_, err := s.auth.RegisterNewUser(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
-		// TODO: error process
+		if errors.Is(err, auth.ErrUserExists) {
+			return nil, status.Error(codes.AlreadyExists, "user already exists")
+		}
+
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
-	return &ssov1.RegisterResponse{UserId: userID}, nil
+	return nil, nil
 }
 
 func validateLogin(req *ssov1.LoginRequest) error {

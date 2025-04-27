@@ -24,9 +24,4 @@ go.work.sum
 
 # Config files
 local.yaml
-docker-compose.yaml
-redis.conf
 .env
-
-# Migrations
-migrations/*.sql

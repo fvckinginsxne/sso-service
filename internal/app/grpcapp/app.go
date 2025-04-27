@@ -7,7 +7,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	authgrpc "sso/internal/grpc/auth"
+	authgrpc "auth/internal/grpc/auth"
 )
 
 type App struct {
@@ -18,7 +18,7 @@ type App struct {
 
 func New(
 	log *slog.Logger,
-	authSevice authgrpc.Auth, 
+	authSevice authgrpc.Auth,
 	port int,
 ) *App {
 	gRPCServer := grpc.NewServer()

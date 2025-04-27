@@ -3,13 +3,14 @@ package auth
 import (
 	"context"
 	"errors"
-	"sso/internal/services/auth"
 
 	ssov1 "github.com/fvckinginsxne/protos/gen/go/sso"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	"auth/internal/services/auth"
 )
 
 type Auth interface {
@@ -17,7 +18,6 @@ type Auth interface {
 		ctx context.Context,
 		email string,
 		password string,
-		appID int,
 	) (string, error)
 	RegisterNewUser(
 		ctx context.Context,
@@ -35,10 +35,6 @@ func Register(gRPC *grpc.Server, auth Auth) {
 	ssov1.RegisterAuthServer(gRPC, &serverAPI{auth: auth})
 }
 
-const (
-	appEmptyValue = 0
-)
-
 func (s *serverAPI) Login(
 	ctx context.Context,
 	req *ssov1.LoginRequest,
@@ -47,7 +43,7 @@ func (s *serverAPI) Login(
 		return nil, err
 	}
 
-	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
+	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidCredentials) {
 			return nil, status.Error(codes.InvalidArgument, "invalid email or password")
@@ -86,10 +82,6 @@ func validateLogin(req *ssov1.LoginRequest) error {
 
 	if req.GetPassword() == "" {
 		return status.Error(codes.InvalidArgument, "password is required")
-	}
-
-	if req.GetAppId() == appEmptyValue {
-		return status.Error(codes.InvalidArgument, "app_id is required")
 	}
 
 	return nil

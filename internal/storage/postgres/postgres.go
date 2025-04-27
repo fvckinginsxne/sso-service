@@ -5,11 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"sso/internal/domain/models"
-	"sso/internal/storage"
 
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
+
+	"auth/internal/domain/models"
+	"auth/internal/storage"
 )
 
 type Storage struct {
@@ -74,27 +75,6 @@ func (s *Storage) User(ctx context.Context, email string) (*models.User, error) 
 	}
 
 	return &user, nil
-}
-
-func (s *Storage) App(ctx context.Context, appID int) (*models.App, error) {
-	const op = "storage.postgres.App"
-
-	stmt, err := s.db.PrepareContext(ctx, "SELECT id, name, secret FROM apps WHERE id = $1")
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	defer stmt.Close()
-
-	var app models.App
-	if err := stmt.QueryRowContext(ctx, appID).Scan(&app.ID, &app.Name, &app.Secret); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("%s: %w", op, storage.ErrAppNotFound)
-		}
-
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	return &app, nil
 }
 
 func (s *Storage) Close() error {

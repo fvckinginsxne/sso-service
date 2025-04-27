@@ -7,9 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"sso/internal/app"
-	"sso/internal/config"
-	"sso/internal/lib/logger/slogpretty"
+	"auth/internal/app"
+	"auth/internal/config"
+	"auth/internal/lib/logger/slogpretty"
+	"auth/internal/storage/postgres"
 )
 
 const (
@@ -20,17 +21,20 @@ const (
 func main() {
 	cfg := config.MustLoad()
 
-	fmt.Println(cfg)
-
 	log := setupLogger(cfg.Env)
 
-	log.Info("starting servece")
+	log.Info("starting service")
 
 	dbURL := dbConnURL(cfg)
 
 	log.Debug("Database connection url", slog.String("conn", dbURL))
 
-	application := app.New(log, cfg.GRPC.Port, dbURL, cfg.TokenTTL)
+	storage, err := postgres.New(dbURL)
+	if err != nil {
+		panic(err)
+	}
+
+	application := app.New(log, cfg.GRPC.DockerPort, storage, cfg.Token.TTL, cfg.Token.Secret)
 
 	go application.GRPCServer.MustRun()
 
@@ -40,6 +44,10 @@ func main() {
 	<-stop
 
 	application.GRPCServer.Stop()
+
+	if err := storage.Close(); err != nil {
+		panic(err)
+	}
 
 	log.Info("application stopped gracefully")
 }
@@ -73,5 +81,5 @@ func setupPrettyLogger() *slog.Logger {
 
 func dbConnURL(cfg *config.Config) string {
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		cfg.DB.Username, cfg.DB.Password, cfg.DB.Host, cfg.DB.Port, cfg.DB.Name)
+		cfg.DB.User, cfg.DB.Password, cfg.DB.Host, cfg.DB.DockerPort, cfg.DB.Name)
 }

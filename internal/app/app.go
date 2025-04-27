@@ -4,9 +4,9 @@ import (
 	"log/slog"
 	"time"
 
-	"sso/internal/app/grpcapp"
-	"sso/internal/services/auth"
-	"sso/internal/storage/postgres"
+	"auth/internal/app/grpcapp"
+	"auth/internal/services/auth"
+	"auth/internal/storage/postgres"
 )
 
 type App struct {
@@ -16,15 +16,11 @@ type App struct {
 func New(
 	log *slog.Logger,
 	grpcPort int,
-	dbConnURL string,
+	storage *postgres.Storage,
 	tokenTTL time.Duration,
+	tokenSecret string,
 ) *App {
-	storage, err := postgres.New(dbConnURL)
-	if err != nil {
-		panic(err)
-	}
-
-	authService := auth.New(log, storage, storage, storage, tokenTTL)
+	authService := auth.New(log, storage, storage, tokenTTL, tokenSecret)
 
 	grpcApp := grpcapp.New(log, authService, grpcPort)
 

@@ -10,18 +10,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"sso/internal/domain/models"
-	"sso/internal/lib/jwt"
-	"sso/internal/lib/logger/sl"
-	"sso/internal/storage"
+	"auth/internal/domain/models"
+	"auth/internal/lib/jwt"
+	"auth/internal/lib/logger/sl"
+	"auth/internal/storage"
 )
 
 type Auth struct {
 	log          *slog.Logger
 	userSaver    UserSaver
 	userProvider UserProvider
-	appProvider  AppProvider
 	tokenTTL     time.Duration
+	tokenSecret  string
 }
 
 type UserSaver interface {
@@ -32,13 +32,8 @@ type UserProvider interface {
 	User(ctx context.Context, email string) (*models.User, error)
 }
 
-type AppProvider interface {
-	App(ctx context.Context, appID int) (*models.App, error)
-}
-
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrInvalidAppID       = errors.New("invalid app id")
 	ErrUserExists         = errors.New("user already exists")
 )
 
@@ -46,15 +41,15 @@ func New(
 	log *slog.Logger,
 	userSaver UserSaver,
 	userProvider UserProvider,
-	appProvider AppProvider,
 	tokenTTL time.Duration,
+	tokenSecret string,
 ) *Auth {
 	return &Auth{
 		log:          log,
 		userSaver:    userSaver,
 		userProvider: userProvider,
-		appProvider:  appProvider,
 		tokenTTL:     tokenTTL,
+		tokenSecret:  tokenSecret,
 	}
 }
 
@@ -62,7 +57,6 @@ func (a *Auth) Login(
 	ctx context.Context,
 	email string,
 	password string,
-	appID int,
 ) (string, error) {
 	const op = "services.auth.Login"
 
@@ -89,22 +83,9 @@ func (a *Auth) Login(
 		return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 	}
 
-	app, err := a.appProvider.App(ctx, appID)
-	if err != nil {
-		if errors.Is(err, storage.ErrAppNotFound) {
-			a.log.Warn("app not found", sl.Err(err))
-
-			return "", fmt.Errorf("%s: %w", op, ErrInvalidAppID)
-		}
-
-		a.log.Error("failed to get app", sl.Err(err))
-
-		return "", fmt.Errorf("%s: %w", op, err)
-	}
-
 	log.Info("user logged in successfully")
 
-	token, err := jwt.NewToken(user, app, a.tokenTTL)
+	token, err := jwt.NewToken(user, a.tokenSecret, a.tokenTTL)
 	if err != nil {
 		a.log.Error("failed to generate jwt token", sl.Err(err))
 
@@ -143,7 +124,7 @@ func (a *Auth) RegisterNewUser(
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	log.Info("user registerd")
+	log.Info("user registered")
 
 	return nil, nil
 }

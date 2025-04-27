@@ -9,23 +9,30 @@ import (
 )
 
 type Config struct {
-	Env      string        `yaml:"env" env-required:"true"`
-	DB       DBConfig      `yaml:"db"`
-	TokenTTL time.Duration `yaml:"token_ttl" env-required:"true"`
-	GRPC     GRPCConfig    `yaml:"grpc"`
+	Env   string     `env:"APP_ENV" env-required:"true"`
+	DB    DBConfig   `env-prefix:"DB_" env-required:"true"`
+	GRPC  GRPCConfig `env-prefix:"GRPC_" env-required:"true"`
+	Token Token      `env-prefix:"TOKEN_" env-required:"true"`
 }
 
 type DBConfig struct {
-	Host     string `yaml:"host" env-default:"localhost"`
-	Port     string `yaml:"port" env-default:"5432"`
-	Username string `yaml:"username" env-required:"true"`
-	Password string `yaml:"password" env-required:"true"`
-	Name     string `yaml:"name" env-required:"true"`
+	Host       string `env:"HOST" env-default:"localhost"`
+	Port       string `env:"PORT" env-default:"5432"`
+	DockerPort string `env:"DOCKER_PORT" env-default:"5432"`
+	User       string `env:"USER" env-required:"true"`
+	Password   string `env:"PASSWORD" env-required:"true"`
+	Name       string `env:"NAME" env-required:"true"`
 }
 
 type GRPCConfig struct {
-	Port    int           `yaml:"port" env-required:"true"`
-	Timeout time.Duration `yaml:"timeout" env-required:"true"`
+	Port       int           `env:"PORT" env-default:"50051"`
+	DockerPort int           `env:"DOCKER_PORT" env-default:"50051"`
+	Timeout    time.Duration `env:"TIMEOUT" env-default:"60s"`
+}
+
+type Token struct {
+	TTL    time.Duration `env:"TTL" env-required:"true"`
+	Secret string        `env:"SECRET" env-required:"true"`
 }
 
 func MustLoad() *Config {

@@ -17,7 +17,6 @@ func NewToken(
 
 	claims := token.Claims.(jwt.MapClaims)
 	claims["uid"] = user.ID
-	claims["email"] = user.Email
 	claims["exp"] = time.Now().Add(duration).Unix()
 
 	tokenString, err := token.SignedString([]byte(jwtSecret))
@@ -26,4 +25,23 @@ func NewToken(
 	}
 
 	return tokenString, err
+}
+
+func ParseUserID(tokenStr, jwtSecret string) (int64, error) {
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+
+		return []byte(jwtSecret), nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	claims := token.Claims.(jwt.MapClaims)
+
+	uid := claims["uid"].(float64)
+
+	return int64(uid), nil
 }

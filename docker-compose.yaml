@@ -1,5 +1,6 @@
 services:
   app:
+    container_name: auth
     build:
       context: .
       dockerfile: Dockerfile
@@ -9,7 +10,10 @@ services:
     environment:
       - CONFIG_PATH=/app/.env
     volumes:
-      - go_mod_cache:/go/pkg/mod
+      - auth_mod_cache:/go/pkg/mod
+      - ./:/app
+    networks:
+      - backend-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -17,18 +21,22 @@ services:
         condition: service_completed_successfully
 
   migrate:
+    container_name: auth-migrate
     image: migrate/migrate:v4.18.2
     volumes:
       - ./migrations:/migrations
     command:
       -path=./migrations
-      -database=postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable
+      -database=postgres://${DB_USER}:${DB_PASSWORD}@auth-postgres:5432/${DB_NAME}?sslmode=disable
       up
+    networks:
+      - backend-network
     depends_on:
       postgres:
         condition: service_healthy
 
   postgres:
+    container_name: auth-postgres
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -38,6 +46,8 @@ services:
       - "${DB_PORT}:5432"
     volumes:
       - auth_pg_data:/var/lib/postgresql/data
+    networks:
+      - backend-network
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 5s
@@ -46,4 +56,9 @@ services:
 
 volumes:
   auth_pg_data:
-  go_mod_cache:
+  auth_mod_cache:
+
+networks:
+  backend-network:
+    name: backend-network
+    external: true

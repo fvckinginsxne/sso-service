@@ -58,7 +58,7 @@ func (a *Auth) Login(
 	email string,
 	password string,
 ) (string, error) {
-	const op = "services.auth.Login"
+	const op = "service.auth.Login"
 
 	log := a.log.With(slog.String("op", op))
 
@@ -100,7 +100,7 @@ func (a *Auth) RegisterNewUser(
 	email string,
 	password string,
 ) (*emptypb.Empty, error) {
-	const op = "services.auth.RegisterNewUser"
+	const op = "service.auth.RegisterNewUser"
 
 	log := a.log.With(slog.String("op", op))
 
@@ -127,4 +127,21 @@ func (a *Auth) RegisterNewUser(
 	log.Info("user registered")
 
 	return nil, nil
+}
+
+func (a *Auth) ParseUserIDFromToken(token string) (int64, error) {
+	const op = "service.auth.ValidateToken"
+
+	log := a.log.With(slog.String("op", op))
+
+	log.Info("validating token")
+
+	id, err := jwt.ParseUserID(token, a.tokenSecret)
+	if err != nil {
+		log.Error("invalid token", sl.Err(err))
+
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return id, nil
 }

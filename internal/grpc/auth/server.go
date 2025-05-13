@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"auth/internal/services/auth"
+	"auth/internal/service/auth"
 )
 
 type Auth interface {
@@ -24,6 +24,7 @@ type Auth interface {
 		email string,
 		password string,
 	) (*emptypb.Empty, error)
+	ParseUserIDFromToken(token string) (int64, error)
 }
 
 type serverAPI struct {
@@ -73,6 +74,18 @@ func (s *serverAPI) Register(
 	}
 
 	return nil, nil
+}
+
+func (s *serverAPI) ParseToken(
+	ctx context.Context,
+	req *ssov1.ParseTokenRequest,
+) (*ssov1.ParseTokenResponse, error) {
+	uid, err := s.auth.ParseUserIDFromToken(req.GetToken())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid token")
+	}
+
+	return &ssov1.ParseTokenResponse{Uid: uid}, nil
 }
 
 func validateLogin(req *ssov1.LoginRequest) error {

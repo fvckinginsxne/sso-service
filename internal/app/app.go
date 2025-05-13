@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"auth/internal/app/grpcapp"
-	"auth/internal/services/auth"
+	"auth/internal/service/auth"
 	"auth/internal/storage/postgres"
 )
 

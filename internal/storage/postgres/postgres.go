@@ -46,7 +46,7 @@ func (s *Storage) SaveUser(ctx context.Context,
 
 	if _, err := stmt.ExecContext(ctx, email, passHash); err != nil {
 		var pgErr *pq.Error
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		if errors.As(err, &pgErr) && pgErr.Code == storage.UniqueViolationCode {
 			return fmt.Errorf("%s: %w", op, storage.ErrUserExists)
 		}
 
